@@ -1,0 +1,126 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using Dungeonator;
+using HutongGames.PlayMaker.Actions;
+using ItemAPI;
+using Mod;
+using MultiplayerBasicExample;
+using Pathfinding;
+using UnityEngine;
+
+namespace Items
+{
+	// Token: 0x0200005C RID: 92
+	internal class Magiciancard : PlayerItem
+	{
+		private string DevilEnemyGuid;
+
+		private GameObject TentacleVFX;
+
+		private Vector2 WarpTarget;
+		private bool used;
+		private bool flag;
+		private int junkcount;
+		private PlayerController m_buffedTarget;
+		private int itemcount;
+
+		public StatModifier m_temporaryModifier { get; private set; }
+		public PlayerController player { get; private set; }
+
+
+		// Token: 0x060001CF RID: 463 RVA: 0x0000E384 File Offset: 0x0000C584
+
+
+		public static void Init()
+		{
+			string name = "The Magician";
+			string resourceName = "ClassLibrary1/Resources/card1";
+			GameObject gameObject = new GameObject();
+			Magiciancard Magiciancard = gameObject.AddComponent<Magiciancard>();
+			ItemBuilder.AddSpriteToObject(name, resourceName, gameObject);
+			string shortDesc = "Abra Kadabra";
+			string longDesc = "Makes projectiles homing, bouncing and piercing for 45s.";
+			Magiciancard.SetupItem(shortDesc, longDesc, "ror");
+			ItemBuilder.AddPassiveStatModifier(Magiciancard, PlayerStats.StatType.AdditionalItemCapacity, 1, StatModifier.ModifyMethod.ADDITIVE);
+			Magiciancard.quality = PickupObject.ItemQuality.COMMON;
+			Magiciancard.consumable = true;
+			Magiciancard.numberOfUses = 1;
+			Magiciancard.SetCooldownType(ItemBuilder.CooldownType.Timed, 45f);
+			List<PlayerItem> cards = RoRItems.cards;
+			cards.Add(Magiciancard);
+
+		}
+
+		protected override void DoEffect(PlayerController user)
+		{
+			AkSoundEngine.PostEvent("Play_OBJ_metalskin_end_01", user.gameObject);
+			base.LastOwner.PostProcessProjectile += Mage;
+			GameManager.Instance.StartCoroutine(Antimage(user));
+			base.CanBeDropped = false;
+			
+			
+
+		}
+
+		private IEnumerator Antimage(PlayerController user)
+		{   yield return
+			new WaitForSeconds(45f);
+			base.LastOwner.PostProcessProjectile -= Mage;
+			yield break;
+
+		}
+
+		private void Mage(Projectile arg2, float arg3)
+		{
+			
+			
+			Projectile arg1 = arg2.GetComponent<Projectile>();
+			arg1.ChangeTintColorShader(1f, Color.blue);
+			PierceProjModifier pierce = arg1.gameObject.GetOrAddComponent<PierceProjModifier>();
+			pierce.penetration = 5;
+			BounceProjModifier bounce = arg1.gameObject.GetOrAddComponent<BounceProjModifier>();
+			bounce.numberOfBounces = 3;
+			HomingModifier homingModifier = arg1.gameObject.GetOrAddComponent<HomingModifier>();
+			homingModifier.HomingRadius = 100f;
+			homingModifier.AngularVelocity = 100f;
+
+
+		}
+
+		public override void Update()
+		{
+			base.Update();
+			if (base.LastOwner)
+			{ 
+				foreach (PlayerItem item in base.LastOwner.activeItems)
+				{   
+					if
+					(RoRItems.cards.Contains(item)) 
+					{ 
+				    itemcount += 1;
+					}
+				}
+				if (itemcount > 1)
+				{ base.Drop(base.LastOwner);
+					itemcount -= 1;
+				}
+			}
+		}
+
+	}
+}
+	
+
+	
+
+
+
+
+
+
+
+	
+
+
